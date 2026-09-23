@@ -3,6 +3,7 @@
 # ÜSTAD GÖZCÜ
 
 **Dünyayı canlı izleyen tek harita paneli**
+<br>
 *Uçaklar · Gemiler · Uydular · Depremler · Yangınlar · Kameralar · Altyapı · Piyasalar*
 
 ![Sürüm](https://img.shields.io/badge/S%C3%9CR%C3%9CM-v0.15.1-2bf0c8?style=for-the-badge&logo=github)
