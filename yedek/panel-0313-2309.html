@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ÜSTAD GÖZCÜ · canlı dünya haritası</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+/* ===========================================================
+   ÜSTAD GÖZCÜ — panel görünümü
+   Renkler ve düzen ölçülerek alındı; kimlik bize ait.
+   =========================================================== */
+
+:root{
+  --vurgu:#2bf0c8;
+  --vurgu-koyu:#128f76;
+  --amber:#ffd23b;
+  --alarm:#ff3b4d;
+  --bilgi:#3d8bff;
+  --zemin:#060c11;
+  --zemin-2:#0a1014;
+  --panel:rgba(6,14,19,.82);
+  --panel-2:rgba(10,22,28,.72);
+  --cizgi:rgba(43,240,200,.22);
+  --cizgi-soluk:rgba(255,255,255,.09);
+  --yazi:#d3dfe6;
+  --yazi-soluk:#6f8a90;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ui:"Inter",system-ui,sans-serif;
+  --baslik:"Michroma",var(--mono);
+}
+
+/* --- tema paletleri --- */
+html[data-tema="amber"]  {--vurgu:#ffd23b;--vurgu-koyu:#a37a00;--cizgi:rgba(255,210,59,.22);}
+html[data-tema="zumrut"] {--vurgu:#4be3a0;--vurgu-koyu:#1c7d55;--cizgi:rgba(75,227,160,.22);}
+html[data-tema="mor"]    {--vurgu:#a98bff;--vurgu-koyu:#5a3fb0;--cizgi:rgba(169,139,255,.24);}
+html[data-tema="kirmizi"]{--vurgu:#ff5c7c;--vurgu-koyu:#a02040;--cizgi:rgba(255,92,124,.24);}
+html[data-tema="buz"]    {--vurgu:#7fd8ff;--vurgu-koyu:#1f6f96;--cizgi:rgba(127,216,255,.24);}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--zemin);color:var(--yazi);font-family:var(--ui);overflow:hidden}
+#harita{position:fixed;inset:0}
+button,input{font-family:inherit;color:inherit}
+button{cursor:pointer}
+.kare-btn{
+  width:38px;height:38px;display:grid;place-items:center;
+  background:var(--panel);border:1px solid var(--cizgi-soluk);
+  border-radius:9px;color:var(--yazi-soluk);backdrop-filter:blur(8px);
+  transition:.16s;
+}
+.kare-btn:hover{color:var(--yazi);border-color:var(--cizgi)}
+.kare-btn.aktif{color:var(--vurgu);border-color:var(--cizgi);
+  box-shadow:0 0 0 1px rgba(43,240,200,.12), 0 0 14px -3px var(--vurgu);}
+.kare-btn.kapali{opacity:.35}
+.kare-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- üst sol: marka ---------- */
+#marka{position:fixed;top:14px;left:14px;display:flex;align-items:center;gap:13px;z-index:20}
+#madalyon{
+  width:56px;height:56px;border-radius:50%;object-fit:cover;
+  border:2px solid var(--vurgu);box-shadow:0 0 0 3px rgba(43,240,200,.13),0 0 22px -6px var(--vurgu);
+  background:var(--zemin-2);
+}
+#marka .ad{font-family:var(--baslik);font-size:21px;letter-spacing:2.5px;line-height:1;
+  color:#eafeff;text-shadow:0 0 18px rgba(43,240,200,.35)}
+#marka .slogan{font-family:var(--mono);font-size:10.5px;letter-spacing:1.6px;
+  color:var(--vurgu);opacity:.85;margin-top:5px}
+
+/* ---------- arama ---------- */
+#arama-kutu{position:fixed;top:18px;left:342px;z-index:22;width:266px}
+#arama{width:100%;height:38px;padding:0 14px 0 36px;border-radius:9px;
+  background:var(--panel);border:1px solid var(--cizgi-soluk);color:var(--yazi);
+  font-size:13px;outline:none;backdrop-filter:blur(8px)}
+#arama:focus{border-color:var(--cizgi)}
+#arama-kutu .buyutec{position:absolute;left:12px;top:10px;width:17px;height:17px;
+  stroke:var(--yazi-soluk);fill:none;stroke-width:1.8}
+#arama-sonuc{position:absolute;top:44px;left:0;right:0;background:var(--panel);
+  border:1px solid var(--cizgi);border-radius:9px;overflow:hidden;display:none;backdrop-filter:blur(10px)}
+#arama-sonuc div{padding:9px 12px;font-size:12px;border-bottom:1px solid var(--cizgi-soluk);cursor:pointer}
+#arama-sonuc div:last-child{border-bottom:0}
+#arama-sonuc div:hover{background:rgba(43,240,200,.08);color:#eafeff}
+
+/* ---------- canlı rozet ---------- */
+#canli{position:fixed;top:20px;left:622px;z-index:22;height:34px;padding:0 13px;
+  display:flex;align-items:center;gap:8px;border-radius:8px;
+  background:var(--panel);border:1px solid var(--cizgi);
+  font-family:var(--mono);font-size:11px;letter-spacing:1.4px;color:var(--vurgu)}
+#canli .nokta{width:7px;height:7px;border-radius:50%;background:var(--vurgu);
+  animation:nabiz 1.6s infinite}
+@keyframes nabiz{0%,100%{opacity:1;box-shadow:0 0 0 0 var(--vurgu)}70%{opacity:.45;box-shadow:0 0 0 7px rgba(43,240,200,0)}}
+
+/* ---------- sağ üst: sayaç paneli ---------- */
+#sayaclar{position:fixed;top:14px;right:14px;z-index:21;background:var(--panel);
+  border:1px solid var(--cizgi-soluk);border-radius:11px;padding:11px 16px 13px;
+  backdrop-filter:blur(10px);min-width:430px}
+#sayaclar .baslik{font-family:var(--mono);font-size:9.5px;letter-spacing:2.4px;
+  color:var(--yazi-soluk);margin-bottom:9px}
+.satir{display:grid;grid-template-columns:repeat(3,max-content);gap:7px 26px}
+.hucre{display:flex;align-items:center;gap:7px;padding:3px 0}
+.hucre svg{width:14px;height:14px;flex:0 0 14px;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.hucre .etiket{font-size:9.5px;color:var(--yazi-soluk);letter-spacing:.3px;line-height:1.15}
+.hucre .deger{font-family:var(--mono);font-size:16px;letter-spacing:.5px;line-height:1.1}
+.hucre.beklemede .deger{font-size:11px;color:var(--yazi-soluk);font-family:var(--mono)}
+
+/* ---------- sol orta: küçük düğmeler ---------- */
+#araclar{position:fixed;left:14px;top:50%;transform:translateY(-50%);z-index:20;
+  display:flex;flex-direction:column;gap:8px}
+
+/* ---------- katman paneli ---------- */
+#katman-panel{position:fixed;left:62px;top:50%;transform:translateY(-50%);z-index:21;
+  background:var(--panel);border:1px solid var(--cizgi);border-radius:11px;
+  padding:12px;width:212px;display:none;backdrop-filter:blur(10px)}
+#katman-panel aciklama{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;
+  color:var(--yazi-soluk);margin-bottom:10px}
+.kat{display:flex;align-items:center;justify-content:space-between;padding:7px 4px;
+  font-size:12.5px;border-bottom:1px solid var(--cizgi-soluk)}
+.kat:last-child{border-bottom:0}
+.kat .sol{display:flex;align-items:center;gap:9px}
+.kat .nokta{width:9px;height:9px;border-radius:50%}
+.anahtar{width:32px;height:17px;border-radius:9px;background:rgba(255,255,255,.13);
+  position:relative;transition:.2s;border:0;flex:0 0 32px}
+.anahtar::after{content:"";position:absolute;top:2.5px;left:2.5px;width:12px;height:12px;
+  border-radius:50%;background:#8fa5ab;transition:.2s}
+.anahtar.acik{background:var(--vurgu-koyu)}
+.anahtar.acik::after{left:17.5px;background:var(--vurgu)}
+
+/* ---------- sağ kenar: ikon rayı ---------- */
+#ray{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:20;
+  display:flex;flex-direction:column;gap:7px}
+#ray .kare-btn{width:40px;height:40px;position:relative}
+#ray .kare-btn .gelecek{position:absolute;top:5px;right:5px;width:5px;height:5px;
+  border-radius:50%;background:var(--amber);opacity:.75}
+#ray .ayrac{height:1px;background:var(--cizgi-soluk);margin:3px 6px}
+
+/* ---------- sol alt: yuvarlak dünya + saat ---------- */
+#kure-kutu{position:fixed;left:14px;bottom:56px;z-index:20;display:flex;align-items:flex-end;gap:13px}
+#kure{width:132px;height:132px;border-radius:50%;
+  box-shadow:0 0 0 1px var(--cizgi),0 0 34px -12px var(--vurgu);background:#02070a}
+#saat-kutu{font-family:var(--mono);padding-bottom:6px}
+#saat{font-size:31px;letter-spacing:1.5px;color:#eafeff;text-shadow:0 0 16px rgba(43,240,200,.28)}
+#saat-alt{font-size:10.5px;color:var(--vurgu);letter-spacing:1.6px;margin-top:2px}
+#koordinat{font-size:10.5px;color:var(--yazi-soluk);letter-spacing:1px;margin-top:7px}
+
+/* ---------- sağ alt ---------- */
+#sag-alt{position:fixed;right:14px;bottom:50px;z-index:20;display:flex;flex-direction:column;gap:8px}
+
+/* ---------- alt şerit ---------- */
+#alt-serit{position:fixed;left:0;right:0;bottom:0;height:38px;z-index:19;
+  display:flex;align-items:center;gap:18px;padding:0 18px;
+  background:linear-gradient(to top,rgba(4,9,12,.92),transparent)}
+#alt-serit a{font-family:var(--mono);font-size:10.5px;letter-spacing:1.1px;
+  color:var(--yazi-soluk);text-decoration:none}
+#alt-serit a:hover{color:var(--vurgu)}
+#kaynak-yazi{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:1.1px;color:var(--yazi-soluk)}
+
+/* ---------- bilgi kutusu (uçak) ---------- */
+.bilgi{font-family:var(--mono);font-size:11.5px;line-height:1.65;min-width:190px}
+.bilgi b{color:var(--vurgu);font-weight:500}
+.bilgi .k{color:var(--yazi-soluk);display:inline-block;min-width:74px}
+.maplibregl-popup-content{background:var(--panel);border:1px solid var(--cizgi);
+  border-radius:9px;padding:11px 13px;color:var(--yazi);box-shadow:0 8px 30px rgba(0,0,0,.5)}
+.maplibregl-popup-tip{border-top-color:var(--panel)!important;border-bottom-color:var(--panel)!important}
+.maplibregl-popup-close-button{color:var(--yazi-soluk);font-size:17px;padding:2px 7px}
+
+/* ---------- uyarı ---------- */
+#uyari{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:40;
+  max-width:520px;background:var(--panel);border:1px solid var(--alarm);
+  border-radius:11px;padding:20px 22px;display:none;backdrop-filter:blur(10px)}
+#uyari h3{margin:0 0 9px;font-family:var(--baslik);font-size:14px;color:var(--alarm);letter-spacing:1.5px}
+#uyari p{margin:0 0 7px;font-size:13px;line-height:1.6;color:var(--yazi)}
+#uyari code{font-family:var(--mono);font-size:12px;color:var(--vurgu);
+  background:rgba(43,240,200,.08);padding:1px 6px;border-radius:4px}
+</style>
+</head>
+<body>
+
+<div id="harita"></div>
+
+<!-- ======================= MARKA ======================= -->
+<div id="marka">
+  <img id="madalyon" src="foto/ustad-kenan.png" alt="ÜSTAD KENAN KUZUCU">
+  <div>
+    <div class="ad">ÜSTAD GÖZCÜ</div>
+    <div class="slogan">GÖZCÜ HİÇ KIRPMAZ</div>
+  </div>
+</div>
+
+<!-- ======================= ARAMA ======================= -->
+<div id="arama-kutu">
+  <svg class="buyutec" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+  <input id="arama" type="text" placeholder="yer ara — şehir, ülke, havalimanı…" autocomplete="off">
+  <div id="arama-sonuc"></div>
+</div>
+
+<div id="canli"><span class="nokta"></span><span id="canli-yazi">CANLI</span></div>
+
+<!-- ======================= SAYAÇLAR ======================= -->
+<div id="sayaclar">
+  <div class="baslik">KATMANLAR · CANLI SAYIM</div>
+  <div class="satir" id="sayac-satir"></div>
+</div>
+
+<!-- ======================= SOL ARAÇLAR ======================= -->
+<div id="araclar">
+  <button class="kare-btn aktif" id="btn-katman" title="Katmanlar">
+    <svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg>
+  </button>
+  <button class="kare-btn" id="btn-tema" title="Tema değiştir">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
+  </button>
+  <button class="kare-btn" id="btn-ben" title="Beni bul">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="2.4"/></svg>
+  </button>
+</div>
+
+<!-- ======================= KATMAN PANELİ ======================= -->
+<div id="katman-panel">
+  <aciklama>KATMANLAR</aciklama>
+  <div id="katman-liste"></div>
+</div>
+
+<!-- ======================= SAĞ RAY ======================= -->
+<div id="ray"></div>
+
+<!-- ======================= KÜRE ======================= -->
+<div id="kure-kutu">
+  <canvas id="kure" width="264" height="264"></canvas>
+  <div id="saat-kutu">
+    <div id="saat">--:--:--</div>
+    <div id="saat-alt">TÜRKİYE · UTC+3</div>
+    <div id="koordinat">--.----  --.----</div>
+  </div>
+</div>
+
+<!-- ======================= SAĞ ALT ======================= -->
+<div id="sag-alt">
+  <button class="kare-btn" id="btn-arti" title="Yakınlaştır">
+    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <button class="kare-btn" id="btn-eksi" title="Uzaklaştır">
+    <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+  </button>
+</div>
+
+<!-- ======================= ALT ŞERİT ======================= -->
+<div id="alt-serit">
+  <a href="#" id="lnk-hakkinda">Hakkında</a>
+  <a href="#" id="lnk-yontem">Kaynaklar ve yöntem</a>
+  <a href="#" id="lnk-hukuk">Yasal uyarı</a>
+  <a href="#" id="lnk-gizli">Gizlilik</a>
+  <a href="#" id="lnk-atif">Atıflar</a>
+  <span id="kaynak-yazi">kaynaklar: ADSB · USGS · OurAirports · OpenStreetMap · CARTO</span>
+</div>
+
+<div id="uyari">
+  <h3>PANEL AÇILAMADI</h3>
+  <p id="uyari-metin"></p>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+/* ===========================================================
+   ÜSTAD GÖZCÜ — panel mantığı
+   =========================================================== */
+'use strict';
+
+const $ = s => document.querySelector(s);
+
+/* ---------------- temalar ---------------- */
+const TEMALAR = [
+  {kod:'',        ad:'Turkuaz'},
+  {kod:'amber',   ad:'Amber'},
+  {kod:'zumrut',  ad:'Zümrüt'},
+  {kod:'mor',     ad:'Mor'},
+  {kod:'kirmizi', ad:'Kırmızı'},
+  {kod:'buz',     ad:'Buz'},
+];
+let temaSira = 0;
+(function temaYukle(){
+  const kayit = localStorage.getItem('gozcu_tema') || '';
+  temaSira = Math.max(0, TEMALAR.findIndex(t => t.kod === kayit));
+  document.documentElement.dataset.tema = TEMALAR[temaSira].kod;
+})();
+
+/* ---------------- renkler ---------------- */
+const R = {
+  vurgu:   () => getComputedStyle(document.documentElement).getPropertyValue('--vurgu').trim() || '#2bf0c8',
+  yazi:    '#eafeff',
+  amber:   '#ffd23b',
+  alarm:   '#ff3b4d',
+  bilgi:   '#3d8bff',
+  mor:     '#a98bff',
+};
+
+/* ---------------- ikonlar (SVG) ---------------- */
+const IKON = {
+  ucak:   '<path d="M12 3l2 6h6l-4.5 3.5L17 20l-5-3-5 3 1.5-7.5L4 9h6z"/>',
+  deprem: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5.6 5.6l2.6 2.6M15.8 15.8l2.6 2.6M18.4 5.6l-2.6 2.6M8.2 15.8l-2.6 2.6"/>',
+  hava:   '<path d="M4 20l8-16 8 16"/><path d="M7.5 14h9"/><circle cx="12" cy="10" r="1.2"/>',
+  gemi:   '<path d="M3 15l1.5 4h15L21 15z"/><path d="M6 15V9l6-3 6 3v6"/><path d="M12 6V3"/>',
+  kamera: '<rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3z"/>',
+  uydu:   '<path d="M9 15l-3 3M15 9l3-3"/><rect x="8.5" y="8.5" width="7" height="7" rx="1.4" transform="rotate(45 12 12)"/><path d="M3 21l3-3M18 6l3-3"/>',
+  yangin: '<path d="M12 3s5 5 5 9a5 5 0 01-10 0c0-2 1-3 1-5 1.5 1 2 2.5 2 2.5S12 7 12 3z"/>',
+  olay:   '<path d="M12 3l9.5 17h-19z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".9" fill="currentColor"/>',
+  kablo:  '<path d="M2 16c4-9 16-9 20 0"/><path d="M2 20c4-9 16-9 20 0"/>',
+  radar:  '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12l6-5"/>',
+  tema:   '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
+  ayar:   '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+};
+const svg = (yol, renk) => `<svg viewBox="0 0 24 24" style="stroke:${renk}">${yol}</svg>`;
+
+/* ---------------- katman tanımları ---------------- */
+const KATMANLAR = [
+  {kimlik:'ucak',      ad:'Uçaklar',        ikon:'ucak',   renk:R.vurgu(), acik:true,  hazir:true},
+  {kimlik:'gemi',      ad:'Gemiler',        ikon:'gemi',   renk:'#5cc8ff', acik:true,  hazir:true},
+  {kimlik:'uydu',      ad:'Uydular',        ikon:'uydu',   renk:'#9fe8ff', acik:true,  hazir:true},
+  {kimlik:'deprem',    ad:'Depremler',      ikon:'deprem', renk:R.alarm,   acik:true,  hazir:true},
+  {kimlik:'yangin',    ad:'Yangınlar',      ikon:'yangin', renk:'#ff8a3d', acik:true,  hazir:true},
+  {kimlik:'olay',      ad:'Doğa olayları',  ikon:'olay',   renk:R.amber,   acik:false, hazir:true},
+  {kimlik:'hava',      ad:'Havalimanları',  ikon:'hava',   renk:R.amber,   acik:true,  hazir:true},
+  {kimlik:'kablo',     ad:'Denizaltı kabloları', ikon:'kablo', renk:R.mor, acik:false, hazir:true},
+  {kimlik:'kamera',    ad:'Kameralar',      ikon:'kamera', renk:'#7fd8ff', acik:false, hazir:true},
+];
+const katmanDurum = {};
+KATMANLAR.forEach(k => katmanDurum[k.kimlik] = k.acik);
+
+let kaynakUcak = localStorage.getItem('gozcu_kaynak') || 'adsb.lol';
+
+/* ---------------- harita ---------------- */
+/* Konum bağlantıdan da gelebilir:  ?la=41.01&lo=28.97&z=9  */
+const SORGU = new URLSearchParams(location.search);
+const sayi = (ad, varsayilan) => {
+  const v = parseFloat(SORGU.get(ad));
+  return Number.isFinite(v) ? v : varsayilan;
+};
+let harita;
+try{
+  harita = new maplibregl.Map({
+    container:'harita',
+    style:'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+    center:[sayi('lo', 32.8), sayi('la', 39.0)],
+    zoom:sayi('z', 5.0),
+    maxZoom:14,
+    minZoom:1,
+    attributionControl:false,
+    pitchWithRotate:false,
+  });
+}catch(hata){
+  $('#uyari').style.display='block';
+  $('#uyari-metin').textContent = 'Harita motoru başlatılamadı: ' + hata.message;
+}
+/* Kendi yakınlaştırma düğmelerimiz var (sağ alt), MapLibre'nin
+   kendi denetimini eklemiyoruz ki çift düğme olmasın. */
+
+/* Bağlantıdan katman seçimi:  ?kat=kablo,olay,gemi   (diğerleri kapanır) */
+(function katmanSec(){
+  const ham = SORGU.get('kat');
+  if(!ham) return;
+  const secili = ham.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  Object.keys(katmanDurum).forEach(k => katmanDurum[k] = secili.indexOf(k) >= 0);
+  KATMANLAR.forEach(k => k.acik = !!katmanDurum[k.kimlik]);
+})();
+
+/* ---------------- uçak ikonu (tuval üzerine çizilir) ---------------- */
+const UCAK_GOVDE = [
+  [0,-16],[1.3,-13],[1.3,-5],[14,2],[14,5],[1.3,.5],[1.3,8],
+  [5,11.5],[5,13.5],[0,12],[-5,13.5],[-5,11.5],[-1.3,8],
+  [-1.3,.5],[-14,5],[-14,2],[-1.3,-5],[-1.3,-13],
+];
+function ucakIkonu(renk){
+  const boy = 34, t = document.createElement('canvas');
+  t.width = t.height = boy;
+  const c = t.getContext('2d');
+  c.translate(boy/2, boy/2);
+  c.beginPath();
+  UCAK_GOVDE.forEach(([x,y],i) => i ? c.lineTo(x,y) : c.moveTo(x,y));
+  c.closePath();
+  c.fillStyle = renk;
+  c.fill();
+  c.lineWidth = 1.1;
+  c.strokeStyle = 'rgba(0,0,0,.55)';
+  c.stroke();
+  return c.getImageData(0,0,boy,boy);
+}
+
+/* gemi silueti — pruva yukarı bakar, rota ile döndürülür */
+const GEMI_GOVDE = [
+  [0,-15],[2.6,-9],[3.4,-2],[3.4,9],[6.2,13.6],[0,15],[-6.2,13.6],[-3.4,9],
+  [-3.4,-2],[-2.6,-9],
+];
+function gemiIkonu(renk){
+  const boy = 34, t = document.createElement('canvas');
+  t.width = t.height = boy;
+  const c = t.getContext('2d');
+  c.translate(boy/2, boy/2);
+  c.beginPath();
+  GEMI_GOVDE.forEach(([x,y],i) => i ? c.lineTo(x,y) : c.moveTo(x,y));
+  c.closePath();
+  c.fillStyle = renk;
+  c.fill();
+  c.lineWidth = 1.1;
+  c.strokeStyle = 'rgba(0,0,0,.6)';
+  c.stroke();
+  return c.getImageData(0,0,boy,boy);
+}
+
+/* kamera ikonu — küçük kutu + gövde */
+function kameraIkonu(renk){
+  const boy = 30, t = document.createElement('canvas');
+  t.width = t.height = boy;
+  const c = t.getContext('2d');
+  c.translate(3, 5);
+  c.fillStyle = renk;
+  c.strokeStyle = 'rgba(0,0,0,.6)';
+  c.lineWidth = 1.1;
+  // gövde
+  c.beginPath();
+  c.roundRect ? c.roundRect(0, 2, 16, 12, 2.2) : c.rect(0, 2, 16, 12);
+  c.fill(); c.stroke();
+  // objektif
+  c.beginPath();
+  c.moveTo(17, 5); c.lineTo(24, 2); c.lineTo(24, 14); c.lineTo(17, 11);
+  c.closePath(); c.fill(); c.stroke();
+  return c.getImageData(0,0,boy,boy);
+}
+
+/* ---------------- boş kaynaklar ---------------- */
+const BOS = {type:'FeatureCollection', features:[]};
+
+harita.on('load', () => {
+  /* --- ikonlar --- */
+  harita.addImage('ucak-alcak',  ucakIkonu('#ffd23b'));
+  harita.addImage('ucak-orta',   ucakIkonu('#2bf0c8'));
+  harita.addImage('ucak-yuksek', ucakIkonu('#eafeff'));
+  harita.addImage('ucak-yerde',  ucakIkonu('#7d939a'));
+  harita.addImage('gemi-ikon',   gemiIkonu('#5cc8ff'));
+  harita.addImage('kamera-ikon', kameraIkonu('#7fd8ff'));
+
+  /* --- kaynaklar --- */
+  harita.addSource('ucaklar',  {type:'geojson', data:BOS});
+  harita.addSource('depremler',{type:'geojson', data:BOS});
+  harita.addSource('havalari', {type:'geojson', data:BOS});
+  harita.addSource('gemiler',  {type:'geojson', data:BOS});
+  harita.addSource('uydular',  {type:'geojson', data:BOS});
+  harita.addSource('yanginlar',{type:'geojson', data:BOS});
+  harita.addSource('olaylar',  {type:'geojson', data:BOS});
+  harita.addSource('kablolar', {type:'geojson', data:BOS});
+  harita.addSource('kameralar',{type:'geojson', data:BOS});
+
+  /* --- havalimanları --- */
+  harita.addLayer({
+    id:'hava-nokta', type:'circle', source:'havalari',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'],2,1.2,6,2.6,10,5],
+      'circle-color': R.amber,
+      'circle-opacity':['interpolate',['linear'],['zoom'],2,.35,6,.6,10,.8],
+      'circle-stroke-width':.6,
+      'circle-stroke-color':'rgba(255,210,59,.5)',
+    },
+  });
+
+  /* --- depremler --- */
+  harita.addLayer({
+    id:'deprem-hale', type:'circle', source:'depremler',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['get','m'],2.5,7,5,20,7,42],
+      'circle-color': R.alarm,
+      'circle-opacity':.13,
+      'circle-blur':.6,
+    },
+  });
+  harita.addLayer({
+    id:'deprem-nokta', type:'circle', source:'depremler',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['get','m'],2.5,2.4,5,6,7,12],
+      'circle-color':['interpolate',['linear'],['get','m'],2.5,'#ffd23b',4,'#ff8a3d',6,'#ff3b4d'],
+      'circle-opacity':.95,
+      'circle-stroke-width':1,
+      'circle-stroke-color':'rgba(255,255,255,.45)',
+    },
+  });
+
+  /* --- uçaklar --- */
+  harita.addLayer({
+    id:'ucak-ikon', type:'symbol', source:'ucaklar',
+    layout:{
+      'icon-image':[
+        'case',
+        ['==',['get','y'],1], 'ucak-yerde',
+        ['<',['get','a'],12000], 'ucak-alcak',
+        ['<',['get','a'],30000], 'ucak-orta',
+        'ucak-yuksek',
+      ],
+      'icon-size':['interpolate',['linear'],['zoom'],2,.55,6,.75,10,1.0],
+      'icon-rotate':['get','d'],
+      'icon-rotation-alignment':'map',
+      'icon-allow-overlap':true,
+      'icon-ignore-placement':true,
+    },
+  });
+
+  /* --- denizaltı kabloları (en altta kalsın) --- */
+  harita.addLayer({
+    id:'kablo-cizgi', type:'line', source:'kablolar',
+    layout:{'line-cap':'round','line-join':'round'},
+    paint:{
+      'line-color':['get','renk'],
+      'line-width':['interpolate',['linear'],['zoom'],2,.7,6,1.4,10,2.2],
+      'line-opacity':['interpolate',['linear'],['zoom'],2,.34,6,.5,10,.62],
+    },
+  }, 'hava-nokta');
+
+  /* --- gemiler --- */
+  harita.addLayer({
+    id:'gemi-ikon', type:'symbol', source:'gemiler',
+    layout:{
+      'icon-image':'gemi-ikon',
+      'icon-size':['interpolate',['linear'],['zoom'],2,.5,6,.72,10,1.0],
+      'icon-rotate':['get','y'],
+      'icon-rotation-alignment':'map',
+      'icon-allow-overlap':true,
+      'icon-ignore-placement':true,
+    },
+  });
+
+  /* --- uydular --- */
+  harita.addLayer({
+    id:'uydu-hale', type:'circle', source:'uydular',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'],2,3,6,5,10,8],
+      'circle-color':'#9fe8ff', 'circle-opacity':.16, 'circle-blur':.8,
+    },
+  });
+  harita.addLayer({
+    id:'uydu-nokta', type:'circle', source:'uydular',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'],2,1.1,6,2,10,3.2],
+      'circle-color':'#dcf6ff', 'circle-opacity':.9,
+      'circle-stroke-width':.5, 'circle-stroke-color':'rgba(159,232,255,.6)',
+    },
+  });
+
+  /* --- yangınlar --- */
+  harita.addLayer({
+    id:'yangin-hale', type:'circle', source:'yanginlar',
+    paint:{'circle-radius':16,'circle-color':'#ff8a3d','circle-opacity':.14,'circle-blur':.9},
+  });
+  harita.addLayer({
+    id:'yangin-nokta', type:'circle', source:'yanginlar',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'],2,2.4,6,4,10,6],
+      'circle-color':'#ff8a3d', 'circle-opacity':.95,
+      'circle-stroke-width':1, 'circle-stroke-color':'rgba(255,255,255,.5)',
+    },
+  });
+
+  /* --- doğa olayları (fırtına vb.) --- */
+  harita.addLayer({
+    id:'olay-nokta', type:'circle', source:'olaylar',
+    paint:{
+      'circle-radius':['interpolate',['linear'],['zoom'],2,3.4,6,5.5,10,8],
+      'circle-color':'#ffd23b', 'circle-opacity':.9,
+      'circle-stroke-width':1.4, 'circle-stroke-color':'rgba(255,210,59,.45)',
+    },
+  });
+
+  /* --- kameralar --- */
+  harita.addLayer({
+    id:'kamera-ikon-k', type:'symbol', source:'kameralar',
+    layout:{
+      'icon-image':'kamera-ikon',
+      'icon-size':['interpolate',['linear'],['zoom'],4,.5,8,.75,12,1.05],
+      'icon-allow-overlap':true,
+      'icon-ignore-placement':true,
+    },
+  });
+
+  katmanGorunumleriniUygula();
+  sayaclariCiz();
+  rayCiz();
+  katmanPanelCiz();
+
+  $('#canli-yazi').textContent = 'CANLI';
+  dongu();
+});
+
+harita.on('error', e => { /* karo hataları sessiz kalsın */ });
+
+/* ---------------- katman görünürlüğü ---------------- */
+function katmanGorunumleriniUygula(){
+  const g = v => v ? 'visible' : 'none';
+  const koy = (id, acik) => { if(harita.getLayer(id)) harita.setLayoutProperty(id, 'visibility', g(acik)); };
+  koy('ucak-ikon',    katmanDurum.ucak);
+  koy('gemi-ikon',    katmanDurum.gemi);
+  koy('uydu-nokta',   katmanDurum.uydu);
+  koy('uydu-hale',    katmanDurum.uydu);
+  koy('deprem-nokta', katmanDurum.deprem);
+  koy('deprem-hale',  katmanDurum.deprem);
+  koy('yangin-nokta', katmanDurum.yangin);
+  koy('yangin-hale',  katmanDurum.yangin);
+  koy('olay-nokta',   katmanDurum.olay);
+  koy('hava-nokta',   katmanDurum.hava);
+  koy('kablo-cizgi',  katmanDurum.kablo);
+  koy('kamera-ikon-k',katmanDurum.kamera);
+}
+
+/* ---------------- sayaç paneli ---------------- */
+let sonSayilar = {ucak:0, deprem:0, hava:0, gemi:0, uydu:0, yangin:0, olay:0, kablo:0, kamera:0};
+let ucakEski = false;
+function sayaclariCiz(){
+  const hucreler = [
+    {ad: ucakEski ? 'UÇAKLAR · son bilinen' : 'UÇAKLAR', deger:sonSayilar.ucak, renk:R.vurgu(), ikon:'ucak'},
+    {ad:'GEMİLER',       deger:sonSayilar.gemi,   renk:'#5cc8ff', ikon:'gemi'},
+    {ad:'UYDULAR',       deger:sonSayilar.uydu,   renk:'#9fe8ff', ikon:'uydu'},
+    {ad:'DEPREMLER · 24sa', deger:sonSayilar.deprem, renk:R.alarm, ikon:'deprem'},
+    {ad:'YANGINLAR',     deger:sonSayilar.yangin, renk:'#ff8a3d', ikon:'yangin'},
+    {ad:'DOĞA OLAYLARI', deger:sonSayilar.olay,   renk:R.amber,   ikon:'olay'},
+    {ad:'HAVALİMANLARI', deger:sonSayilar.hava,   renk:R.amber,   ikon:'hava'},
+    {ad:'DENİZALTI KABLOSU', deger:sonSayilar.kablo, renk:R.mor,  ikon:'kablo'},
+    {ad:'KAMERALAR · Londra', deger:sonSayilar.kamera, renk:'#7fd8ff', ikon:'kamera'},
+  ];
+  const bicim = n => (n || 0).toLocaleString('tr-TR');
+  $('#sayac-satir').innerHTML = hucreler.map(h => h.hazir === false
+    ? `<div class="hucre beklemede">${svg(IKON[h.ikon], h.renk)}
+         <div><div class="etiket">${h.ad}</div><div class="deger">yakında</div></div></div>`
+    : `<div class="hucre">${svg(IKON[h.ikon], h.renk)}
+         <div><div class="etiket">${h.ad}</div>
+         <div class="deger" style="color:${h.renk}">${bicim(h.deger)}</div></div></div>`
+  ).join('');
+}
+
+/* ---------------- sağ ray ---------------- */
+function rayCiz(){
+  const oge = [];
+  KATMANLAR.forEach(k => {
+    oge.push(`<button class="kare-btn ${k.acik?'aktif':''} ${k.hazir?'':'kapali'}"
+        data-kat="${k.kimlik}" title="${k.ad}${k.hazir?'':' — yakında'}">
+        ${svg(IKON[k.ikon], k.hazir? k.renk : 'var(--yazi-soluk)')}
+        ${k.hazir?'':'<span class="gelecek"></span>'}</button>`);
+  });
+  oge.push('<div class="ayrac"></div>');
+  oge.push(`<button class="kare-btn" id="ray-tema" title="Tema">
+      ${svg(IKON.tema, R.amber)}</button>`);
+  oge.push(`<button class="kare-btn" id="ray-ayar" title="Ayarlar">
+      ${svg(IKON.ayar, 'var(--yazi-soluk)')}</button>`);
+  $('#ray').innerHTML = oge.join('');
+
+  $('#ray').querySelectorAll('[data-kat]').forEach(b => {
+    b.onclick = () => {
+      const k = KATMANLAR.find(x => x.kimlik === b.dataset.kat);
+      if(!k.hazir){
+        kisaBilgi(k.ad + ' katmanı yakında — kaynağı hazırlanıyor.');
+        return;
+      }
+      katmanDurum[k.kimlik] = !katmanDurum[k.kimlik];
+      katmanGorunumleriniUygula();
+      rayCiz(); katmanPanelCiz();
+    };
+  });
+  $('#ray-tema').onclick = temaDegistir;
+  $('#ray-ayar').onclick = ayarPaneli;
+}
+
+/* ---------------- katman paneli ---------------- */
+function katmanPanelCiz(){
+  $('#katman-liste').innerHTML = KATMANLAR.map(k => `
+    <div class="kat">
+      <div class="sol"><span class="nokta" style="background:${k.renk}"></span>
+        <span>${k.ad}</span></div>
+      <button class="anahtar ${k.hazir && katmanDurum[k.kimlik] ? 'acik':''}"
+              data-kat="${k.kimlik}" ${k.hazir?'':'disabled'}
+              style="${k.hazir?'':'opacity:.35'}"></button>
+    </div>`).join('');
+  $('#katman-liste').querySelectorAll('.anahtar').forEach(b => {
+    b.onclick = () => {
+      const k = b.dataset.kat;
+      katmanDurum[k] = !katmanDurum[k];
+      katmanGorunumleriniUygula(); katmanPanelCiz(); rayCiz();
+    };
+  });
+}
+
+/* ---------------- araç düğmeleri ---------------- */
+$('#btn-katman').onclick = () => {
+  const p = $('#katman-panel');
+  const acik = p.style.display === 'block';
+  p.style.display = acik ? 'none' : 'block';
+  $('#btn-katman').classList.toggle('aktif', !acik);
+};
+$('#btn-tema').onclick = temaDegistir;
+$('#btn-ben').onclick = () => {
+  if(!navigator.geolocation) return kisaBilgi('Tarayıcı konum vermiyor.');
+  navigator.geolocation.getCurrentPosition(
+    k => { harita.flyTo({center:[k.coords.longitude, k.coords.latitude], zoom:9});
+           kisaBilgi('Konumun bulundu.'); },
+    () => kisaBilgi('Konum izni verilmedi.'));
+};
+$('#btn-arti').onclick = () => harita.zoomIn();
+$('#btn-eksi').onclick = () => harita.zoomOut();
+
+function temaDegistir(){
+  temaSira = (temaSira + 1) % TEMALAR.length;
+  document.documentElement.dataset.tema = TEMALAR[temaSira].kod;
+  localStorage.setItem('gozcu_tema', TEMALAR[temaSira].kod);
+  kisaBilgi('Tema: ' + TEMALAR[temaSira].ad);
+  sayaclariCiz(); rayCiz();
+}
+
+/* ---------------- ayar paneli ---------------- */
+function ayarPaneli(){
+  const yeni = kaynakUcak === 'adsb.lol' ? 'adsb.fi' : 'adsb.lol';
+  kaynakUcak = yeni;
+  localStorage.setItem('gozcu_kaynak', yeni);
+  kisaBilgi('Uçak kaynağı: ' + yeni);
+  ucaklariYukle();
+}
+
+/* ---------------- arama ---------------- */
+const aramaKutu = $('#arama');
+let aramaZaman;
+aramaKutu.oninput = () => {
+  clearTimeout(aramaZaman);
+  const s = aramaKutu.value.trim();
+  if(s.length < 3){ $('#arama-sonuc').style.display='none'; return; }
+  aramaZaman = setTimeout(async () => {
+    try{
+      const c = await (await fetch('/veri/ara?q=' + encodeURIComponent(s))).json();
+      if(!c.sonuclar || !c.sonuclar.length){ $('#arama-sonuc').style.display='none'; return; }
+      $('#arama-sonuc').innerHTML = c.sonuclar.map((r,i) =>
+        `<div data-i="${i}">${r.ad}</div>`).join('');
+      $('#arama-sonuc').style.display = 'block';
+      $('#arama-sonuc').querySelectorAll('div').forEach(d => {
+        d.onclick = () => {
+          const r = c.sonuclar[d.dataset.i];
+          harita.flyTo({center:[r.lo, r.la], zoom:9});
+          $('#arama-sonuc').style.display='none';
+          aramaKutu.value = r.ad.split(',')[0];
+        };
+      });
+    }catch(e){ $('#arama-sonuc').style.display='none'; }
+  }, 420);
+};
+aramaKutu.onkeydown = e => { if(e.key === 'Escape') $('#arama-sonuc').style.display='none'; };
+
+/* ---------------- veri çekme ---------------- */
+function gorunurKutu(){
+  const s = harita.getBounds();
+  return [s.getSouth(), s.getWest(), s.getNorth(), s.getEast()]
+    .map(v => v.toFixed(3)).join(',');
+}
+
+let ucakYukleniyor = false;
+async function ucaklariYukle(){
+  if(ucakYukleniyor || !harita.loaded()) return;
+  ucakYukleniyor = true;
+  try{
+    const c = await (await fetch(`/veri/ucak?b=${gorunurKutu()}&kaynak=${kaynakUcak}`)).json();
+    const ucaklar = c.ucaklar || [];
+    // Kaynak o an sınırlıysa boş liste gelebilir; ekrandaki uçakları
+    // silmeyelim, son bilinen konumlar kalsın.
+    if(ucaklar.length === 0 && sonSayilar.ucak > 0){
+      ucakYukleniyor = false;
+      return;
+    }
+    harita.getSource('ucaklar').setData({
+      type:'FeatureCollection',
+      features: ucaklar.map(u => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[u.lo, u.la]},
+          properties:u,
+        })),
+    });
+    sonSayilar.ucak = c.sayi;
+    // iki kaynak da sınırlıysa sunucu son bilinen konumları gönderir;
+    // bunu sayaçta dürüstçe belirt
+    ucakEski = (c.eski || 0) > 0;
+    sayaclariCiz();
+  }catch(e){ /* sessiz */ }
+  ucakYukleniyor = false;
+}
+
+async function depremleriYukle(){
+  try{
+    const c = await (await fetch('/veri/deprem')).json();
+    if(c.depremler){
+      harita.getSource('depremler').setData({
+        type:'FeatureCollection',
+        features: c.depremler.map(d => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[d.lo, d.la]},
+          properties:{m:d.m, yer:d.yer, t:d.t, der:d.der},
+        })),
+      });
+      sonSayilar.deprem = c.sayi;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+async function havalimanlariniYukle(){
+  try{
+    const c = await (await fetch('/veri/havalimani')).json();
+    if(c.havalimanlari){
+      harita.getSource('havalari').setData({
+        type:'FeatureCollection',
+        features: c.havalimanlari.map(h => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[h.lo, h.la]},
+          properties:h,
+        })),
+      });
+      sonSayilar.hava = c.tum_sayi;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+async function gemileriYukle(){
+  try{
+    const c = await (await fetch('/veri/gemi')).json();
+    if(c.gemiler){
+      harita.getSource('gemiler').setData({
+        type:'FeatureCollection',
+        features: c.gemiler.map(g => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[g.lo, g.la]},
+          properties:g,
+        })),
+      });
+      sonSayilar.gemi = c.sayi;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+async function uydulariYukle(){
+  try{
+    const c = await (await fetch('/veri/uydu')).json();
+    if(c.uydular){
+      harita.getSource('uydular').setData({
+        type:'FeatureCollection',
+        features: c.uydular.map(u => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[u.lo, u.la]},
+          properties:u,
+        })),
+      });
+      sonSayilar.uydu = c.sayi;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+async function yanginlariYukle(){
+  try{
+    const c = await (await fetch('/veri/yangin')).json();
+    const l = c.yanginlar || c.olaylar;
+    if(l){
+      harita.getSource('yanginlar').setData({
+        type:'FeatureCollection',
+        features: l.map(y => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[y.lo, y.la]},
+          properties:y,
+        })),
+      });
+      sonSayilar.yangin = l.length;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+async function olaylariYukle(){
+  try{
+    const c = await (await fetch('/veri/olay')).json();
+    if(c.olaylar){
+      harita.getSource('olaylar').setData({
+        type:'FeatureCollection',
+        features: c.olaylar.map(o => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[o.lo, o.la]},
+          properties:o,
+        })),
+      });
+      sonSayilar.olay = c.sayi;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+async function kablolariYukle(){
+  try{
+    const c = await (await fetch('/veri/kablo')).json();
+    if(c.kablolar){
+      harita.getSource('kablolar').setData({
+        type:'FeatureCollection',
+        features: c.kablolar.map(k => ({
+          type:'Feature',
+          geometry:{type:'MultiLineString', coordinates:k.hat},
+          properties:{ad:k.ad, renk:k.renk},
+        })),
+      });
+      sonSayilar.kablo = c.sayi;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+async function kameralariYukle(){
+  try{
+    const c = await (await fetch('/veri/kamera')).json();
+    if(c.kameralar){
+      harita.getSource('kameralar').setData({
+        type:'FeatureCollection',
+        features: c.kameralar.filter(k => k.gorsel).map(k => ({
+          type:'Feature',
+          geometry:{type:'Point', coordinates:[k.lo, k.la]},
+          properties:k,
+        })),
+      });
+      sonSayilar.kamera = c.sayi;
+      sayaclariCiz();
+    }
+  }catch(e){}
+}
+
+/* ---------------- tıklama: uçak, gemi, uydu, yangın ---------------- */
+function bilgiKutusu(baslik, satirlar){
+  $('#harita').querySelectorAll('.maplibregl-popup').forEach(x => x.remove());
+  new maplibregl.Popup({closeButton:true, offset:14})
+    .setLngLat(bilgiKutusu._yer)
+    .setHTML(`<div class="bilgi">
+      <div style="color:${R.vurgu()};font-size:13.5px;margin-bottom:5px">${baslik}</div>
+      ${satirlar}
+    </div>`)
+    .addTo(harita);
+}
+const satir = (k, v) => `<div><span class="k">${k}</span><b>${v}</b></div>`;
+
+harita.on('click','ucak-ikon', e => {
+  const p = e.features[0].properties;
+  const ad = v => v === null || v === undefined || v === '' ? '—' : v;
+  bilgiKutusu._yer = e.lngLat;
+  bilgiKutusu(ad(p.c || p.h), [
+    satir('Tescil', ad(p.r)),
+    satir('Tip', ad(p.t)),
+    satir('İrtifa', Number(p.a||0).toLocaleString('tr-TR') + ' ft'),
+    satir('Hız', Math.round(p.g||0) + ' kt'),
+    satir('Yön', Math.round(p.d||0) + '°'),
+    satir('Tırmanış', (p.v>0?'+':'') + p.v + ' ft/dk'),
+    satir('Kod', ad(p.s)),
+  ].join(''));
+});
+
+harita.on('click','gemi-ikon', e => {
+  const p = e.features[0].properties;
+  bilgiKutusu._yer = e.lngLat;
+  bilgiKutusu('Gemi · MMSI ' + p.m, [
+    satir('Hız', (p.g||0) + ' knot'),
+    satir('Rota', Math.round(p.y||0) + '°'),
+    satir('Pruva', Math.round(p.h||0) + '°'),
+  ].join(''));
+});
+
+harita.on('click','uydu-nokta', e => {
+  const p = e.features[0].properties;
+  bilgiKutusu._yer = e.lngLat;
+  bilgiKutusu(p.ad || ('Uydu ' + p.n), [
+    satir('NORAD', p.n),
+    satir('İrtifa', Number(p.i||0).toLocaleString('tr-TR') + ' km'),
+    satir('Enlem', p.la + '°'),
+    satir('Boylam', p.lo + '°'),
+  ].join(''));
+});
+
+harita.on('click','yangin-nokta', e => {
+  const p = e.features[0].properties;
+  bilgiKutusu._yer = e.lngLat;
+  bilgiKutusu(p.ad || 'Yangın', [
+    satir('Kategori', 'Orman yangını'),
+    satir('Tarih', p.t || '—'),
+    p.bag ? `<div style="margin-top:4px"><a href="${p.bag}" target="_blank" rel="noopener"
+      style="color:${R.vurgu()}">kaynağa git →</a></div>` : '',
+  ].join(''));
+});
+
+harita.on('click','olay-nokta', e => {
+  const p = e.features[0].properties;
+  bilgiKutusu._yer = e.lngLat;
+  bilgiKutusu(p.ad || 'Doğa olayı', [
+    satir('Tür', p.kat || '—'),
+    satir('Tarih', p.t || '—'),
+    p.bag ? `<div style="margin-top:4px"><a href="${p.bag}" target="_blank" rel="noopener"
+      style="color:${R.vurgu()}">kaynağa git →</a></div>` : '',
+  ].join(''));
+});
+
+/* ---------------- kamera: canlı görüntü ---------------- */
+let kameraZaman = null;
+harita.on('click','kamera-ikon-k', e => {
+  const p = e.features[0].properties;
+  $('#harita').querySelectorAll('.maplibregl-popup').forEach(x => x.remove());
+  const kutu = new maplibregl.Popup({closeButton:true, offset:14, maxWidth:'340px'})
+    .setLngLat(e.lngLat)
+    .setHTML(`<div class="bilgi">
+        <div style="color:${R.vurgu()};font-size:13px;margin-bottom:6px">${p.ad || 'Kamera'}</div>
+        <img id="kamera-gorsel" alt="canlı görüntü" src="${p.gorsel}"
+             style="width:290px;border-radius:7px;border:1px solid var(--cizgi);display:block">
+        <div style="margin-top:6px;color:var(--yazi-soluk);font-size:10.5px">
+          canlı görüntü · 15 sn'de bir tazelenir
+        </div>
+      </div>`)
+    .addTo(harita);
+
+  clearInterval(kameraZaman);
+  kameraZaman = setInterval(() => {
+    const im = document.getElementById('kamera-gorsel');
+    if(!im || !kutu.isOpen()){ clearInterval(kameraZaman); return; }
+    im.src = p.gorsel.split('?')[0] + '?t=' + Date.now();
+  }, 15000);
+});
+
+/* ---------------- koordinat takibi ---------------- */
+harita.on('mousemove', e => {
+  $('#koordinat').textContent =
+    `${Math.abs(e.lngLat.lat).toFixed(4)}°${e.lngLat.lat>=0?'K':'G'}  ` +
+    `${Math.abs(e.lngLat.lng).toFixed(4)}°${e.lngLat.lng>=0?'D':'B'}`;
+});
+
+/* ---------------- döngü ---------------- */
+let kureZaman = 0;
+function dongu(){
+  ucaklariYukle();
+  depremleriYukle();
+  havalimanlariniYukle();
+  gemileriYukle();
+  uydulariYukle();
+  yanginlariYukle();
+  olaylariYukle();
+  kablolariYukle();
+  kameralariYukle();
+
+  setInterval(ucaklariYukle, 30000);   // gönüllü ADS-B ağını yormamak için 30 sn
+  setInterval(gemileriYukle, 40000);
+  setInterval(uydulariYukle, 20000);
+  setInterval(depremleriYukle, 180000);
+  setInterval(yanginlariYukle, 900000);
+  setInterval(olaylariYukle, 900000);
+
+  saatCalistir();
+  setInterval(saatCalistir, 1000);
+
+  harita.on('move', () => {
+    if(performance.now() - kureZaman > 220){ kureZaman = performance.now(); kureCiz(); }
+  });
+  setTimeout(kureCiz, 400);
+  setInterval(kureCiz, 1500);
+}
+
+function saatCalistir(){
+  const s = new Date();
+  const tr = new Date(s.getTime() + (3*60 + s.getTimezoneOffset())*60000);
+  const iki = n => String(n).padStart(2,'0');
+  $('#saat').textContent = `${iki(tr.getHours())}:${iki(tr.getMinutes())}:${iki(tr.getSeconds())}`;
+}
+
+/* ---------------- yuvarlak dünya ---------------- */
+const kureT = $('#kure');
+const kureC = kureT.getContext('2d');
+function kureCiz(){
+  if(!harita || !harita.loaded()) return;
+  const B = kureT.width, r = B/2 - 3, mx = B/2, my = B/2;
+  const merkez = harita.getCenter();
+  const lat0 = merkez.lat * Math.PI/180, lon0 = merkez.lng * Math.PI/180;
+
+  kureC.clearRect(0,0,B,B);
+  kureC.save();
+  kureC.beginPath(); kureC.arc(mx,my,r,0,Math.PI*2); kureC.clip();
+
+  // küre zemini
+  const gr = kureC.createRadialGradient(mx-r*.3,my-r*.3,r*.1,mx,my,r);
+  gr.addColorStop(0,'#0b1a20'); gr.addColorStop(1,'#02070a');
+  kureC.fillStyle = gr; kureC.fillRect(0,0,B,B);
+
+  const izd = (latD, lonD) => {
+    const la = latD*Math.PI/180, lo = lonD*Math.PI/180 - lon0;
+    const cosc = Math.sin(lat0)*Math.sin(la) + Math.cos(lat0)*Math.cos(la)*Math.cos(lo);
+    if(cosc <= 0) return null;
+    const x = Math.cos(la)*Math.sin(lo);
+    const y = Math.cos(lat0)*Math.sin(la) - Math.sin(lat0)*Math.cos(la)*Math.cos(lo);
+    return [mx + r*x, my - r*y];
+  };
+
+  // ızgara
+  kureC.strokeStyle = 'rgba(43,240,200,.13)'; kureC.lineWidth = 1;
+  for(let latD=-60; latD<=60; latD+=30){
+    kureC.beginPath();
+    for(let lonD=-180; lonD<=180; lonD+=4){
+      const p = izd(latD,lonD);
+      if(!p){ kureC.stroke(); kureC.beginPath(); continue; }
+      kureC.lineTo(p[0],p[1]);
+    }
+    kureC.stroke();
+  }
+  for(let lonD=-180; lonD<180; lonD+=30){
+    kureC.beginPath();
+    for(let latD=-88; latD<=88; latD+=3){
+      const p = izd(latD,lonD);
+      if(!p){ kureC.stroke(); kureC.beginPath(); continue; }
+      kureC.lineTo(p[0],p[1]);
+    }
+    kureC.stroke();
+  }
+
+  // gece ışıkları: havalimanları (soluk) — küreye doku verir
+  const hs = harita.getSource('havalari');
+  if(hs && hs._data && hs._data.features){
+    kureC.fillStyle = 'rgba(43,240,200,.30)';
+    hs._data.features.forEach((f,i) => {
+      if(i % 3) return;
+      const p = izd(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+      if(!p) return;
+      kureC.beginPath(); kureC.arc(p[0],p[1],1.1,0,Math.PI*2); kureC.fill();
+    });
+  }
+
+  // depremler
+  const ds = harita.getSource('depremler');
+  if(ds && ds._data && ds._data.features){
+    kureC.fillStyle = 'rgba(255,59,77,.9)';
+    ds._data.features.forEach(f => {
+      const p = izd(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+      if(!p) return;
+      kureC.beginPath(); kureC.arc(p[0],p[1],2.4,0,Math.PI*2); kureC.fill();
+    });
+  }
+
+  // uçaklar — en parlak katman
+  const us = harita.getSource('ucaklar');
+  if(us && us._data && us._data.features){
+    kureC.shadowColor = 'rgba(234,254,255,.9)'; kureC.shadowBlur = 5;
+    kureC.fillStyle = 'rgba(234,254,255,.95)';
+    us._data.features.forEach((f,i) => {
+      if(i % 2) return;
+      const p = izd(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+      if(!p) return;
+      kureC.beginPath(); kureC.arc(p[0],p[1],1.6,0,Math.PI*2); kureC.fill();
+    });
+    kureC.shadowBlur = 0;
+  }
+
+  // görünen alan çerçevesi
+  const sb = harita.getBounds();
+  kureC.strokeStyle = 'rgba(43,240,200,.85)'; kureC.lineWidth = 1.6;
+  kureC.beginPath();
+  let ilk = true;
+  const kose = [[sb.getSouth(),sb.getWest()],[sb.getSouth(),sb.getEast()],
+                [sb.getNorth(),sb.getEast()],[sb.getNorth(),sb.getWest()]];
+  kose.forEach(([la,lo]) => {
+    const p = izd(la,lo);
+    if(!p){ ilk = true; return; }
+    if(ilk){ kureC.moveTo(p[0],p[1]); ilk = false; } else kureC.lineTo(p[0],p[1]);
+  });
+  kureC.closePath(); kureC.stroke();
+
+  // merkez işareti
+  const mp = izd(merkez.lat, merkez.lng);
+  if(mp){
+    kureC.fillStyle = '#ffd23b';
+    kureC.beginPath(); kureC.arc(mp[0],mp[1],3,0,Math.PI*2); kureC.fill();
+  }
+  kureC.restore();
+
+  kureC.strokeStyle = 'rgba(43,240,200,.55)'; kureC.lineWidth = 2;
+  kureC.beginPath(); kureC.arc(mx,my,r,0,Math.PI*2); kureC.stroke();
+}
+
+/* ---------------- alt şerit ---------- */
+function kisaBilgi(metin){
+  const e = $('#canli-yazi');
+  const eski = e.textContent;
+  e.textContent = metin;
+  clearTimeout(kisaBilgi._z);
+  kisaBilgi._z = setTimeout(() => e.textContent = eski, 2600);
+}
+const BILGI_METIN = {
+  hakkinda:`ÜSTAD GÖZCÜ, resmî ve açık kaynaklardan gelen canlı veriyi tek haritada toplar: uçaklar, gemiler, kameralar, depremler, yangınlar, uydular ve altyapı. Şu an yayında olan katmanlar: uçaklar, depremler, havalimanları.`,
+  yontem:`Uçak konumları topluluk ADS-B ağından (adsb.lol / adsb.fi), depremler USGS'ten, havalimanları OurAirports'tan (kamu malı) alınır. Harita altlığı CARTO Dark Matter + OpenStreetMap (ODbL). Hiçbiri ticari kaynaktan gelmez.`,
+  hukuk:`Veri sağlayıcıların kullanım şartlarına uyulur, arşiv tutulmaz, yalnız son kare gösterilir. Yüz veya plaka tanıma yapılmaz. Bu panel bir gözlem aracıdır, ticari bir ürün değildir.`,
+  gizli:`Konumunuz yalnız "beni bul" düğmesine bastığınızda tarayıcıdan alınır ve hiçbir yere kaydedilmez. Ziyaretçi takibi yapılmaz.`,
+  atif:`Harita © CARTO · veri © OpenStreetMap katkıcıları (ODbL) · havalimanları OurAirports (kamu malı) · depremler USGS · uçak verisi topluluk ADS-B ağı.`,
+};
+['hakkinda','yontem','hukuk','gizli','atif'].forEach(k => {
+  $('#lnk-' + k).onclick = e => {
+    e.preventDefault();
+    const m = BILGI_METIN[k];
+    $('#canli-yazi').textContent = m;
+    clearTimeout(kisaBilgi._z2);
+    kisaBilgi._z2 = setTimeout(() => $('#canli-yazi').textContent = 'CANLI', 12000);
+  };
+});
+
+/* ---------------- kısayollar ---------------- */
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  if(e.key === 't' || e.key === 'T') temaDegistir();
+  if(e.key === 'k' || e.key === 'K') $('#btn-katman').click();
+  if(e.key === ' '){ e.preventDefault(); harita.flyTo({center:[32.8,39.0], zoom:5}); }
+});
+</script>
+</body>
+</html>

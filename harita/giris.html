@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ÜSTAD GÖZCÜ · dünyayı canlı gör</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Michroma&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================
+   ÜSTAD GÖZCÜ — giriş ekranı
+   Düzen ve ölçüler referanstan alındı; kimlik bize ait.
+   =========================================================== */
+:root{
+  --vurgu:#2bf0c8;
+  --vurgu-koyu:#128f76;
+  --amber:#ffd23b;
+  --zemin:#04090c;
+  --zemin-2:#070f14;
+  --panel:rgba(7,16,21,.72);
+  --cizgi:rgba(43,240,200,.22);
+  --cizgi-soluk:rgba(255,255,255,.08);
+  --yazi:#d3dfe6;
+  --yazi-soluk:#7b9199;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ui:"Inter",system-ui,-apple-system,sans-serif;
+  --baslik:"Michroma",var(--mono);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--zemin);color:var(--yazi);
+  font-family:var(--ui);overflow:hidden}
+a{color:inherit;text-decoration:none;cursor:pointer}
+
+/* arka plan dokusu */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(43,240,200,.028) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(43,240,200,.028) 1px,transparent 1px);
+  background-size:78px 78px;
+  mask-image:radial-gradient(ellipse 78% 74% at 62% 46%,#000 34%,transparent 100%);
+}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 55% at 70% 48%,rgba(43,240,200,.075),transparent 70%);
+}
+
+/* ---------- üst bar ---------- */
+#ust{
+  position:relative;z-index:5;height:62px;display:flex;align-items:center;
+  gap:26px;padding:0 24px;border-bottom:1px solid var(--cizgi-soluk);
+  background:rgba(4,9,12,.72);backdrop-filter:blur(10px);
+}
+#logo{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+#logo svg{width:26px;height:26px}
+#logo .ad{font-family:var(--baslik);font-size:15px;letter-spacing:3.2px;color:#eafeff;
+  white-space:nowrap}
+#menu{display:flex;align-items:center;gap:22px;margin-left:6px}
+#menu a{font-size:12px;color:var(--yazi-soluk);letter-spacing:.4px;transition:.15s}
+#menu a:hover{color:var(--vurgu)}
+#ust-sag{margin-left:auto;display:flex;align-items:center;gap:14px}
+#saat{font-family:var(--mono);font-size:12.5px;letter-spacing:1.2px;color:var(--yazi)}
+#cevrimici{font-family:var(--mono);font-size:10px;letter-spacing:1.6px;color:var(--vurgu);
+  display:flex;align-items:center;gap:6px;white-space:nowrap}
+#cevrimici .nokta{width:6px;height:6px;border-radius:50%;background:var(--vurgu);
+  box-shadow:0 0 8px var(--vurgu);animation:nabiz 1.8s infinite}
+@keyframes nabiz{0%,100%{opacity:1}60%{opacity:.35}}
+.rozet{font-family:var(--mono);font-size:10.5px;letter-spacing:1.4px;color:var(--yazi-soluk);
+  border:1px solid var(--cizgi-soluk);border-radius:6px;padding:5px 9px}
+.dugme{
+  font-family:var(--ui);font-size:12.5px;font-weight:500;letter-spacing:.3px;
+  border-radius:7px;padding:9px 15px;border:1px solid var(--cizgi-soluk);
+  background:transparent;color:var(--yazi);cursor:pointer;transition:.16s;white-space:nowrap;
+}
+.dugme:hover{border-color:var(--cizgi);color:#eafeff}
+.dugme.dolu{background:var(--vurgu);border-color:var(--vurgu);color:#04231d;font-weight:600}
+.dugme.dolu:hover{background:#5cf7d8;color:#04231d}
+.dugme.buyuk{font-size:14.5px;padding:15px 26px;border-radius:9px;
+  box-shadow:0 0 30px -8px var(--vurgu)}
+
+/* ---------- kayan şerit ---------- */
+#serit{
+  position:relative;z-index:4;height:38px;overflow:hidden;
+  border-bottom:1px solid var(--cizgi-soluk);background:rgba(6,13,17,.6);
+  display:flex;align-items:center;
+}
+#serit-ic{display:flex;gap:0;white-space:nowrap;animation:kay 62s linear infinite}
+#serit-ic:hover{animation-play-state:paused}
+@keyframes kay{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.serit-hucre{display:inline-flex;align-items:center;gap:9px;padding:0 22px;
+  border-right:1px solid var(--cizgi-soluk)}
+.serit-hucre svg{width:14px;height:14px;fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.serit-hucre .sayi{font-family:var(--mono);font-size:13px;letter-spacing:.4px}
+.serit-hucre .etiket{font-family:var(--mono);font-size:9.5px;letter-spacing:1.5px;
+  color:var(--yazi-soluk)}
+
+/* ---------- orta ---------- */
+#orta{
+  position:relative;z-index:3;height:calc(100vh - 62px - 38px - 40px);
+  display:grid;grid-template-columns:minmax(430px,1fr) minmax(420px,1fr);
+  align-items:center;gap:20px;padding:0 46px;max-width:1620px;margin:0 auto;
+}
+#sol{max-width:620px}
+#etiket{font-family:var(--mono);font-size:10.5px;letter-spacing:2.6px;color:var(--vurgu);
+  display:flex;align-items:center;gap:9px;margin-bottom:20px}
+#etiket::after{content:"";flex:0 0 46px;height:1px;background:var(--cizgi)}
+#baslik{margin:0 0 22px;font-size:clamp(34px,3.9vw,54px);line-height:1.06;
+  font-weight:600;letter-spacing:-1.2px;color:#f2fbff}
+#baslik .v{color:var(--vurgu)}
+#aciklama{font-size:15px;line-height:1.72;color:#a8b9c0;margin:0 0 30px;max-width:560px}
+#aciklama b{color:var(--vurgu);font-weight:500}
+#notlar{margin-top:14px;font-family:var(--mono);font-size:11px;letter-spacing:.9px;
+  color:var(--yazi-soluk)}
+#notlar b{color:#cfe9ec;font-weight:400}
+#rozetler{display:flex;gap:9px;margin-top:24px;flex-wrap:wrap}
+#rozetler span{font-family:var(--mono);font-size:10px;letter-spacing:1.3px;
+  color:var(--yazi-soluk);border:1px solid var(--cizgi-soluk);border-radius:999px;
+  padding:5px 11px}
+
+/* ---------- küre ---------- */
+#sag{display:flex;flex-direction:column;align-items:center;justify-content:center}
+#kure-kutu{position:relative;width:min(500px,42vw);aspect-ratio:1}
+#kure{width:100%;height:100%;display:block}
+.koşe{position:absolute;width:26px;height:26px;border:1px solid var(--cizgi);opacity:.7}
+.koşe.sol-ust{top:0;left:0;border-right:0;border-bottom:0}
+.koşe.sag-ust{top:0;right:0;border-left:0;border-bottom:0}
+.koşe.sol-alt{bottom:0;left:0;border-right:0;border-top:0}
+.koşe.sag-alt{bottom:0;right:0;border-left:0;border-top:0}
+#koordinat{font-family:var(--mono);font-size:11px;letter-spacing:1.7px;
+  color:var(--yazi-soluk);margin-top:18px;text-align:right;width:100%}
+#koordinat b{color:var(--vurgu);font-weight:400}
+#koordinat.imlec b{color:#ffffff}
+#kure-ipucu{font-family:var(--mono);font-size:10px;letter-spacing:1.1px;
+  color:#5d747c;margin-top:7px;text-align:right;width:100%}
+
+/* ---------- alt şerit ---------- */
+#alt{
+  position:relative;z-index:5;height:40px;display:flex;align-items:center;gap:16px;
+  padding:0 24px;border-top:1px solid var(--cizgi-soluk);
+  background:rgba(4,9,12,.8);font-family:var(--mono);font-size:10px;letter-spacing:.8px;
+  color:var(--yazi-soluk)
+}
+#alt .sag{margin-left:auto;text-align:right}
+
+/* ---------- bilgi penceresi ---------- */
+#perde{position:fixed;inset:0;z-index:40;background:rgba(2,6,8,.78);
+  backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:26px}
+#perde.acik{display:flex}
+#kutu{max-width:760px;width:100%;max-height:80vh;overflow:auto;background:var(--zemin-2);
+  border:1px solid var(--cizgi);border-radius:13px;padding:26px 28px;
+  box-shadow:0 24px 70px rgba(0,0,0,.6)}
+#kutu h2{margin:0 0 16px;font-family:var(--baslik);font-size:15px;letter-spacing:2.4px;
+  color:var(--vurgu)}
+#kutu p{font-size:13.5px;line-height:1.75;color:#a8b9c0;margin:0 0 13px}
+#kutu p b{color:#dfeef3;font-weight:500}
+#kutu table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+#kutu td{padding:8px 6px;border-bottom:1px solid var(--cizgi-soluk);vertical-align:top}
+#kutu td:first-child{color:#dfeef3;white-space:nowrap;padding-right:16px}
+#kutu td.sayi{font-family:var(--mono);color:var(--vurgu);text-align:right;white-space:nowrap}
+#kapat{margin-top:20px}
+
+@media (max-width:1080px){
+  #menu{display:none}
+  #orta{grid-template-columns:1fr;padding:26px 22px;height:auto;gap:26px}
+  #sag{order:-1}
+  #kure-kutu{width:min(340px,70vw)}
+  body{overflow:auto}
+  #alt{flex-direction:column;height:auto;padding:10px 20px;gap:6px}
+  #alt .sag{margin-left:0;text-align:left}
+}
+</style>
+</head>
+<body>
+
+<!-- =================== ÜST BAR =================== -->
+<div id="ust">
+  <div id="logo">
+    <svg viewBox="0 0 32 32" fill="none" stroke="#2bf0c8" stroke-width="1.9">
+      <path d="M16 2.6l11.4 6.6v13.6L16 29.4 4.6 22.8V9.2z"/>
+      <circle cx="16" cy="16" r="4.4"/>
+      <path d="M16 2.6v7M16 22.4v7M4.6 9.2l6 3.5M21.4 19.3l6 3.5M27.4 9.2l-6 3.5M10.6 19.3l-6 3.5"/>
+    </svg>
+    <span class="ad">ÜSTAD GÖZCÜ</span>
+  </div>
+  <div id="menu">
+    <a href="#" data-pencere="katmanlar">Katmanlar</a>
+    <a href="#" data-pencere="yontem">Kaynaklar ve yöntem</a>
+    <a href="#" data-pencere="hakkinda">Hakkında</a>
+    <a href="#" data-pencere="kilavuz">Kullanım</a>
+  </div>
+  <div id="ust-sag">
+    <span id="saat">--:--:--</span>
+    <span id="cevrimici"><span class="nokta"></span>SİSTEM ÇEVRİMİÇİ</span>
+    <span class="rozet">TR</span>
+    <button class="dugme" data-pencere="kilavuz">Nasıl kullanılır</button>
+    <button class="dugme dolu" id="git">HARİTAYI AÇ →</button>
+  </div>
+</div>
+
+<!-- =================== KAYAN ŞERİT =================== -->
+<div id="serit"><div id="serit-ic"></div></div>
+
+<!-- =================== ORTA =================== -->
+<div id="orta">
+  <div id="sol">
+    <div id="etiket">DÜNYA, CANLI // AÇIK KAYNAK</div>
+    <h1 id="baslik">Bütün dünyayı<br>tek haritada,<br><span class="v">canlı gör.</span></h1>
+    <p id="aciklama">
+      <b>Uçakları</b> ve <b>gemileri</b> anlık izle, <b>uyduları</b> yörüngesinde takip et,
+      <b>depremleri</b>, <b>yangınları</b> ve <b>doğa olaylarını</b> aynı haritada gör.
+      <b>Denizaltı kabloları</b>, havalimanları ve resmî <b>trafik kameraları</b> da
+      aynı ekranda. Dünya kıpırdadığında Gözcü görür — hiç kırpmaz.
+    </p>
+    <button class="dugme dolu buyuk" id="git2">Haritayı aç →</button>
+    <div id="notlar"><b>Ücretsiz</b> · hesap gerekmez · kurulum yok</div>
+    <div id="rozetler">
+      <span>9 CANLI KATMAN</span>
+      <span>ANAHTAR GEREKMEZ</span>
+      <span>AÇIK VERİ</span>
+      <span>TÜRKÇE</span>
+    </div>
+  </div>
+
+  <div id="sag">
+    <div id="kure-kutu">
+      <canvas id="kure"></canvas>
+      <span class="koşe sol-ust"></span><span class="koşe sag-ust"></span>
+      <span class="koşe sol-alt"></span><span class="koşe sag-alt"></span>
+    </div>
+    <div id="koordinat">ENLEM <b id="k-enlem">--.---</b>&nbsp;&nbsp;&nbsp;BOYLAM <b id="k-boylam">--.---</b></div>
+    <div id="kure-ipucu">Sürükle: döndür &nbsp;·&nbsp; Tıkla: o noktayı haritada aç</div>
+  </div>
+</div>
+
+<!-- =================== ALT ŞERİT =================== -->
+<div id="alt">
+  <span>Veri kamuya açık resmî kaynaklardan gelir · arşiv tutulmaz, yalnız son kare gösterilir</span>
+  <span class="sag">ADSB · USGS · NASA EONET · SatNOGS · OurAirports · submarinecablemap · TfL · OpenStreetMap · CARTO</span>
+</div>
+
+<!-- =================== BİLGİ PENCERESİ =================== -->
+<div id="perde">
+  <div id="kutu">
+    <h2 id="kutu-baslik">BAŞLIK</h2>
+    <div id="kutu-govde"></div>
+    <button class="dugme" id="kapat">Kapat</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+
+/* ---------------- saat ---------------- */
+function saatCalistir(){
+  const s = new Date();
+  const tr = new Date(s.getTime() + (3*60 + s.getTimezoneOffset())*60000);
+  const i = n => String(n).padStart(2,'0');
+  $('#saat').textContent = `${i(tr.getHours())}:${i(tr.getMinutes())}:${i(tr.getSeconds())} UTC+3`;
+}
+saatCalistir(); setInterval(saatCalistir, 1000);
+
+/* ---------------- katmanlar ---------------- */
+const IKON = {
+  ucak:'<path d="M12 3l2 6h6l-4.5 3.5L17 20l-5-3-5 3 1.5-7.5L4 9h6z"/>',
+  gemi:'<path d="M3 15l1.5 4h15L21 15z"/><path d="M6 15V9l6-3 6 3v6"/><path d="M12 6V3"/>',
+  uydu:'<path d="M9 15l-3 3M15 9l3-3"/><rect x="8.5" y="8.5" width="7" height="7" rx="1.4" transform="rotate(45 12 12)"/><path d="M3 21l3-3M18 6l3-3"/>',
+  deprem:'<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5.6 5.6l2.6 2.6M15.8 15.8l2.6 2.6M18.4 5.6l-2.6 2.6M8.2 15.8l-2.6 2.6"/>',
+  yangin:'<path d="M12 3s5 5 5 9a5 5 0 01-10 0c0-2 1-3 1-5 1.5 1 2 2.5 2 2.5S12 7 12 3z"/>',
+  hava:'<path d="M4 20l8-16 8 16"/><path d="M7.5 14h9"/><circle cx="12" cy="10" r="1.2"/>',
+  kablo:'<path d="M2 16c4-9 16-9 20 0"/><path d="M2 20c4-9 16-9 20 0"/>',
+  kamera:'<rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3z"/>',
+  santral:'<path d="M3 20h18"/><path d="M6 20V9l6-3 6 3v11"/><path d="M12 6V3"/><path d="M9.5 20v-5h5v5"/>',
+  olay:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.01"/>',
+  gdacs:'<path d="M12 3l9 16H3z"/><path d="M12 9v5M12 16.5v.01"/>',
+  piyasa:'<path d="M3 17l5-6 4 3 5-7 4 4"/><path d="M3 21h18"/>',
+  merkez:'<path d="M12 2l3 3-3 3-3-3z"/><circle cx="12" cy="14" r="3"/><path d="M5 21c0-4 3.5-6 7-6s7 2 7 6"/>',
+  tahmin:'<circle cx="12" cy="12" r="9"/><path d="M12 12l5-3"/><path d="M12 3v2M21 12h-2M12 21v-2M3 12h2"/>',
+};
+const renk = k => ({ucak:'#2bf0c8', gemi:'#5cc8ff', uydu:'#9fe8ff', deprem:'#ff3b4d',
+  yangin:'#ff8a3d', hava:'#ffd23b', kablo:'#a98bff', kamera:'#7fd8ff',
+  santral:'#ffd23b', olay:'#8fe36b', gdacs:'#ff6b6b', piyasa:'#7fe3a0',
+  merkez:'#ff9ecb', tahmin:'#c9a0ff'})[k];
+
+const KATMANLAR = [
+  {kimlik:'ucak',   ad:'Uçaklar · dünya',    uç:'/veri/ucak?dunya=1'},
+  {kimlik:'gemi',   ad:'Gemiler · Baltık',   uç:'/veri/gemi',  alan:'sayi'},
+  {kimlik:'uydu',   ad:'Uydular',            uç:'/veri/uydu',  alan:'sayi'},
+  {kimlik:'deprem', ad:'Depremler · 24 saat',uç:'/veri/deprem',alan:'sayi'},
+  {kimlik:'yangin', ad:'Yangınlar',          uç:'/veri/yangin',alan:'sayi'},
+  {kimlik:'santral',ad:'Elektrik santralleri',uç:'/veri/santral',alan:'sayi'},
+  {kimlik:'olay',   ad:'Doğa olayları',      uç:'/veri/olay',  alan:'sayi'},
+  {kimlik:'gdacs',  ad:'Afet uyarıları',     uç:'/veri/gdacs', alan:'sayi'},
+  {kimlik:'hava',   ad:'Havalimanları · kayıt', uç:'/veri/havalimani', alan:'tum_sayi'},
+  {kimlik:'kablo',  ad:'Denizaltı kabloları',uç:'/veri/kablo', alan:'sayi'},
+  {kimlik:'kamera', ad:'Kameralar · Londra', uç:'/veri/kamera',alan:'sayi'},
+  {kimlik:'piyasa', ad:'Piyasalar',          uç:'/veri/piyasa',alan:'sayi'},
+  {kimlik:'merkez', ad:'VIP & kuruluşlar',   uç:'/veri/merkez',alan:'sayi'},
+  {kimlik:'tahmin', ad:'Tahmin piyasaları',  uç:'/veri/tahmin',alan:'sayi'},
+];
+const sayilar = {};
+
+function seritCiz(){
+  const hucre = KATMANLAR.map(k => `
+    <div class="serit-hucre">
+      <svg viewBox="0 0 24 24" style="stroke:${renk(k.kimlik)}">${IKON[k.kimlik]}</svg>
+      <span class="sayi" style="color:${renk(k.kimlik)}" data-sayi="${k.kimlik}">—</span>
+      <span class="etiket">${k.ad.toUpperCase()}</span>
+    </div>`).join('');
+  // şerit kesintisiz dönsün diye iki kopya
+  $('#serit-ic').innerHTML = hucre + hucre;
+}
+seritCiz();
+
+function sayilariYaz(){
+  // Şerit iki kopya hâlinde (kesintisiz dönüş için) — ikisini de güncelle.
+  KATMANLAR.forEach(k => {
+    const v = sayilar[k.kimlik];
+    if(v === undefined) return;
+    document.querySelectorAll('[data-sayi="' + k.kimlik + '"]').forEach(d => {
+      d.textContent = Number(v).toLocaleString('tr-TR');
+      // Tazelenemeyen katman soluk gösterilir; yazılan sayı son bilinen değer
+      d.style.opacity = k.bayat ? '.45' : '1';
+      d.title = k.bayat ? 'son bilinen değer' : '';
+    });
+  });
+}
+
+async function katmanSayisi(k){
+  try{
+    const c = await (await fetch(k.uç)).json();
+    let v = null;
+    if(k.kimlik === 'ucak')        v = c.sayi;
+    else if(k.kimlik === 'hava')   v = c.tum_sayi;
+    else if(k.kimlik === 'yangin') v = (c.yanginlar || []).length;
+    else if(k.alan)                v = (c[k.alan] !== undefined ? c[k.alan] : c.sayi);
+
+    if(typeof v === 'number' && v > 0){
+      sayilar[k.kimlik] = v;
+      k.bayat = false;
+    }else if(sayilar[k.kimlik] !== undefined){
+      k.bayat = true;      // kaynak o an çöktü: son bilinen değer kalsın
+    }else{
+      k.bayat = true;      // henüz hiç veri gelmedi
+    }
+    sayilariYaz();
+    return c;
+  }catch(e){
+    // Kaynak hata verdi: 0 yazmak yerine eldeki değeri koru, soluk göster
+    if(sayilar[k.kimlik] !== undefined) k.bayat = true;
+    return null;
+  }
+}
+
+/* ---------------- küre (canlı noktalardan) ---------------- */
+const KT = $('#kure'), KC = KT.getContext('2d');
+let kureVeri = {ucak:[], hava:[], uydu:[], yangin:[], deprem:[]};
+// Küre etkileşimi: kendi dönüşü + elle çevirme + tıklayıp gitme
+let donusAcisi = 0, sonKare = performance.now();
+let elleBoylam = 0, elleEnlem = 0, surukle = null, sonEtkilesim = 0, tikBaslangic = null;
+let kureLat0 = 0, kureLon0 = 0, kureImlec = null;
+const KURE_EGIM = 0.30;      // kürenin eksen eğimi (radyan)
+
+function boyutla(){
+  const b = KT.clientWidth || 460;
+  const olcek = Math.min(window.devicePixelRatio || 1, 2);
+  KT.width = KT.height = Math.round(b * olcek);
+}
+boyutla();
+window.addEventListener('resize', () => { boyutla(); });
+
+/* küre noktalarını topla */
+async function kureVerisiniAl(){
+  const [u, h, y, d, k] = await Promise.all([
+    fetch('/veri/ucak?dunya=1').then(r => r.json()).catch(() => null),
+    fetch('/veri/havalimani').then(r => r.json()).catch(() => null),
+    fetch('/veri/uydu').then(r => r.json()).catch(() => null),
+    fetch('/veri/yangin').then(r => r.json()).catch(() => null),
+    fetch('/veri/deprem').then(r => r.json()).catch(() => null),
+  ]);
+  if(u && u.ucaklar)       kureVeri.ucak = u.ucaklar.map(x => [x.la, x.lo]);
+  if(h && h.havalimanlari) kureVeri.hava = h.havalimanlari.map(x => [x.la, x.lo]);
+  if(y && y.yanginlar)     kureVeri.yangin = y.yanginlar.map(x => [x.la, x.lo]);
+  if(d && d.depremler)     kureVeri.deprem = d.depremler.map(x => [x.la, x.lo]);
+  if(k && k.uydular)       kureVeri.uydu = k.uydular.map(x => [x.la, x.lo]);
+}
+
+function kureCiz(){
+  const B = KT.width, r = B/2 - 2, mx = B/2, my = B/2;
+  const simdi = performance.now();
+  const gecen = Math.min((simdi - sonKare)/1000, .25);
+  sonKare = simdi;
+  // Elle çevirdikten 4 saniye sonra kendi kendine dönmeye devam eder
+  if(simdi - sonEtkilesim > 4000) donusAcisi = (donusAcisi + gecen*3.4) % 360;
+  const t = simdi/1000;
+  const enlemGorunur = Math.max(-70, Math.min(70, 12*Math.sin(t*0.11) + elleEnlem));
+  const lat0 = enlemGorunur * Math.PI/180;
+  const lon0 = (donusAcisi + elleBoylam) * Math.PI/180;
+  kureLat0 = enlemGorunur;
+  kureLon0 = (((donusAcisi + elleBoylam) % 360) + 540) % 360 - 180;
+
+  KC.clearRect(0, 0, B, B);
+  KC.save();
+  KC.translate(mx, my); KC.rotate(-KURE_EGIM); KC.translate(-mx, -my);
+  KC.beginPath(); KC.arc(mx, my, r, 0, Math.PI*2); KC.clip();
+
+  // küre gövdesi
+  const gr = KC.createRadialGradient(mx - r*.34, my - r*.34, r*.06, mx, my, r*1.02);
+  gr.addColorStop(0, '#0d2129'); gr.addColorStop(.62, '#061218'); gr.addColorStop(1, '#020609');
+  KC.fillStyle = gr; KC.fillRect(0, 0, B, B);
+
+  const izd = (latD, lonD) => {
+    const la = latD*Math.PI/180, lo = lonD*Math.PI/180 - lon0;
+    const cosc = Math.sin(lat0)*Math.sin(la) + Math.cos(lat0)*Math.cos(la)*Math.cos(lo);
+    if(cosc <= 0.02) return null;
+    const x = Math.cos(la)*Math.sin(lo);
+    const y = Math.cos(lat0)*Math.sin(la) - Math.sin(lat0)*Math.cos(la)*Math.cos(lo);
+    return [mx + r*x, my - r*y];
+  };
+
+  // ızgara
+  KC.strokeStyle = 'rgba(43,240,200,.10)'; KC.lineWidth = Math.max(1, B/520);
+  for(let latD = -60; latD <= 60; latD += 30){
+    KC.beginPath();
+    let bas = false;
+    for(let lonD = -180; lonD <= 180; lonD += 4){
+      const p = izd(latD, lonD);
+      if(!p){ bas = false; continue; }
+      if(!bas){ KC.moveTo(p[0], p[1]); bas = true; } else KC.lineTo(p[0], p[1]);
+    }
+    KC.stroke();
+  }
+  for(let lonD = -180; lonD < 180; lonD += 30){
+    KC.beginPath();
+    let bas = false;
+    for(let latD = -88; latD <= 88; latD += 3){
+      const p = izd(latD, lonD);
+      if(!p){ bas = false; continue; }
+      if(!bas){ KC.moveTo(p[0], p[1]); bas = true; } else KC.lineTo(p[0], p[1]);
+    }
+    KC.stroke();
+  }
+
+  const noktalariCiz = (liste, boya, yaricap, atla) => {
+    KC.fillStyle = boya;
+    for(let i = 0; i < liste.length; i += (atla || 1)){
+      const n = liste[i];
+      const p = izd(n[0], n[1]);
+      if(!p) continue;
+      KC.beginPath(); KC.arc(p[0], p[1], yaricap, 0, Math.PI*2); KC.fill();
+    }
+  };
+
+  // havalimanları → kıtaların şekli belirir (canlı veriden)
+  noktalariCiz(kureVeri.hava, 'rgba(43,240,200,.40)', Math.max(.9, B/560), 2);
+  // uçaklar — havada, canlı (9.000 kayıt, örneklenir)
+  noktalariCiz(kureVeri.ucak, 'rgba(255,255,255,.80)', Math.max(1.0, B/560), 2);
+  // yangınlar
+  noktalariCiz(kureVeri.yangin, 'rgba(255,138,61,.85)', Math.max(1.2, B/420));
+  // depremler
+  noktalariCiz(kureVeri.deprem, 'rgba(255,59,77,.95)', Math.max(1.6, B/330));
+  // uydular — en parlak
+  KC.shadowColor = 'rgba(200,245,255,.85)'; KC.shadowBlur = Math.max(2, B/170);
+  noktalariCiz(kureVeri.uydu, 'rgba(226,250,255,.95)', Math.max(1.1, B/480));
+  KC.shadowBlur = 0;
+
+  // kenar parlaması
+  const rim = KC.createRadialGradient(mx, my, r*.86, mx, my, r);
+  rim.addColorStop(0, 'rgba(43,240,200,0)');
+  rim.addColorStop(1, 'rgba(43,240,200,.20)');
+  KC.fillStyle = rim; KC.fillRect(0, 0, B, B);
+  KC.restore();
+
+  // dış halka
+  KC.strokeStyle = 'rgba(43,240,200,.5)';
+  KC.lineWidth = Math.max(1.4, B/330);
+  KC.beginPath(); KC.arc(mx, my, r, 0, Math.PI*2); KC.stroke();
+
+  // imleç kürenin üstündeyse imlecin yerini, değilse kürenin merkezini yaz
+  if(kureImlec){
+    $('#k-enlem').textContent = kureImlec.la.toFixed(3);
+    $('#k-boylam').textContent = kureImlec.lo.toFixed(3);
+    $('#koordinat').classList.add('imlec');
+  }else{
+    $('#k-enlem').textContent = kureLat0.toFixed(3);
+    $('#k-boylam').textContent = kureLon0.toFixed(3);
+    $('#koordinat').classList.remove('imlec');
+  }
+
+  requestAnimationFrame(kureCiz);
+}
+
+/* ---------- küre etkileşimi: sürükle döndür, tıkla haritada aç ---------- */
+
+/* Tuval koordinatını yere çevirir (ortografik izdüşümün tersi).
+   Kürenin dışına düşerse null döner. */
+function kureTers(coX, coY){
+  const B = KT.width, r = B/2 - 2, mx = B/2, my = B/2;
+  const dx = (coX - mx)/r, dy = -(coY - my)/r;
+  // çizimdeki sabit eksen eğimini geri al (dönüşün tersi)
+  const a = KURE_EGIM;
+  const x = dx*Math.cos(a) + dy*Math.sin(a);
+  const y = -dx*Math.sin(a) + dy*Math.cos(a);
+  const ro = Math.hypot(x, y);
+  if(ro > 1) return null;
+  const lat0 = kureLat0*Math.PI/180, lon0 = kureLon0*Math.PI/180;
+  const cosc = Math.sqrt(Math.max(0, 1 - ro*ro));
+  const la = Math.asin(Math.max(-1, Math.min(1, cosc*Math.sin(lat0) + y*Math.cos(lat0))));
+  const lo = lon0 + Math.atan2(x, cosc*Math.cos(lat0) - y*Math.sin(lat0));
+  return {la: la*180/Math.PI, lo: (((lo*180/Math.PI) % 360) + 540) % 360 - 180};
+}
+
+/* fare olayını tuval pikseline çevirir (ekran ölçeğini hesaba katar) */
+function tuvalNoktasi(olay){
+  const k = KT.getBoundingClientRect();
+  return [(olay.clientX - k.left) * (KT.width / k.width),
+          (olay.clientY - k.top)  * (KT.height / k.height)];
+}
+
+KT.style.cursor = 'grab';
+
+KT.addEventListener('mousemove', olay => {
+  const [cx, cy] = tuvalNoktasi(olay);
+  kureImlec = kureTers(cx, cy);
+  if(surukle){
+    KT.style.cursor = 'grabbing';
+    const [ox, oy] = surukle;
+    const olcek = 180 / (Math.PI * (KT.width/2));
+    elleBoylam += (cx - ox) * olcek;
+    elleEnlem  = Math.max(-70, Math.min(70, elleEnlem - (cy - oy) * olcek));
+    surukle = [cx, cy];
+    sonEtkilesim = performance.now();
+  }
+});
+
+KT.addEventListener('mouseleave', () => {
+  kureImlec = null; surukle = null; KT.style.cursor = 'grab';
+});
+
+KT.addEventListener('mousedown', olay => {
+  const [cx, cy] = tuvalNoktasi(olay);
+  surukle = [cx, cy];
+  tikBaslangic = [cx, cy];
+  sonEtkilesim = performance.now();
+});
+
+window.addEventListener('mouseup', () => {
+  if(surukle){
+    surukle = null;
+    KT.style.cursor = 'grab';
+    sonEtkilesim = performance.now();
+  }
+});
+
+KT.addEventListener('click', olay => {
+  const [cx, cy] = tuvalNoktasi(olay);
+  const bas = tikBaslangic;
+  tikBaslangic = null;
+  // sürüklediyse gitme
+  if(bas && Math.hypot(cx - bas[0], cy - bas[1]) > 6) return;
+  const yer = kureTers(cx, cy);
+  if(yer){
+    location.href = 'index.html?la=' + yer.la.toFixed(4) +
+                    '&lo=' + yer.lo.toFixed(4) + '&z=6';
+  }
+});
+
+/* dokunmatik: sürükle döndür, dokun ve bırak → haritada aç */
+KT.addEventListener('touchstart', olay => {
+  const d = olay.touches[0];
+  const [cx, cy] = tuvalNoktasi(d);
+  surukle = [cx, cy]; tikBaslangic = [cx, cy];
+  sonEtkilesim = performance.now();
+}, {passive:true});
+
+KT.addEventListener('touchmove', olay => {
+  const d = olay.touches[0];
+  const [cx, cy] = tuvalNoktasi(d);
+  if(surukle){
+    const olcek = 180 / (Math.PI * (KT.width/2));
+    elleBoylam += (cx - surukle[0]) * olcek;
+    elleEnlem  = Math.max(-70, Math.min(70, elleEnlem - (cy - surukle[1]) * olcek));
+    surukle = [cx, cy];
+    sonEtkilesim = performance.now();
+  }
+}, {passive:true});
+
+KT.addEventListener('touchend', olay => {
+  const d = olay.changedTouches[0];
+  const [cx, cy] = tuvalNoktasi(d);
+  const bas = tikBaslangic;
+  surukle = null; tikBaslangic = null;
+  sonEtkilesim = performance.now();
+  if(bas && Math.hypot(cx - bas[0], cy - bas[1]) > 8) return;
+  const yer = kureTers(cx, cy);
+  if(yer){
+    location.href = 'index.html?la=' + yer.la.toFixed(4) +
+                    '&lo=' + yer.lo.toFixed(4) + '&z=6';
+  }
+}, {passive:true});
+
+/* ---------------- yükleme ---------------- */
+(async () => {
+  // Şerit ilk anda dolsun diye katmanlar PARALEL sorulur.
+  // (Sırayla sorulunca havalimanı listesi yüzünden şerit geç doluyordu.)
+  Promise.all(KATMANLAR.map(k => katmanSayisi(k))).then(() => {
+    // Cevap vermeyen katman varsa 20 saniye sonra bir daha dene
+    setTimeout(() => {
+      KATMANLAR.filter(k => k.bayat).forEach(k => katmanSayisi(k));
+    }, 20000);
+  });
+
+  // Küre hemen çizilmeye başlar; veri gelince noktalar kendiliğinden dolar
+  kureCiz();
+  kureVerisiniAl();
+
+  // Hızlı katmanlar 60 sn'de bir; uçak anlık görüntüsü gönüllü ağları ve
+  // OpenSky kotasını yormamak için 5 dakikada bir tazelenir.
+  setInterval(() => {
+    KATMANLAR.forEach(k => { if(k.kimlik !== 'ucak') katmanSayisi(k); });
+  }, 60000);
+  setInterval(async () => {
+    await katmanSayisi(KATMANLAR.find(k => k.kimlik === 'ucak'));
+    const u = await fetch('/veri/ucak?dunya=1').then(r => r.json()).catch(() => null);
+    if(u && u.ucaklar) kureVeri.ucak = u.ucaklar.map(x => [x.la, x.lo]);
+  }, 300000);
+})();
+
+/* ---------------- git ---------------- */
+$('#git').onclick = () => location.href = 'index.html';
+$('#git2').onclick = () => location.href = 'index.html';
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !$('#perde').classList.contains('acik')) location.href = 'index.html';
+  if(e.key === 'Escape') $('#perde').classList.remove('acik');
+});
+
+/* ---------------- bilgi penceresi ---------------- */
+const PENCERE = {
+  katmanlar: () => ['CANLI KATMANLAR', `
+    <p>Panelde şu anda <b>dokuz katman</b> canlı olarak açık. Hepsi resmî ve açık
+    kaynaklardan beslenir; hiçbiri için ücretli abonelik veya gizli veri gerekmez.</p>
+    <table>${KATMANLAR.map(k => `<tr><td>${k.ad}</td>
+      <td class="sayi">${sayilar[k.kimlik] !== undefined ? Number(sayilar[k.kimlik]).toLocaleString('tr-TR') : '—'}</td>
+      <td style="color:#7b9199">${KAYNAK_ADI[k.kimlik]}</td></tr>`).join('')}</table>
+    <p style="margin-top:16px">Kapsam notu: kamera katmanı şu an yalnız Londra'yı
+    (Transport for London JamCams) kapsıyor — Türkiye için resmî açık kamera yayını
+    bulunamadı. Gemi katmanı Finlandiya açık AIS'inden beslendiği için Baltık ve
+    Kuzey Avrupa'yı görür; dünya geneli için isteğe bağlı ücretsiz anahtar gerekir.
+    Uçak sayısı Avrupa-Afrika-Atlantik bölgesinden canlı örneklenir, dünya toplamı
+    değildir.</p>`],
+
+  yontem: () => ['KAYNAKLAR VE YÖNTEM', `
+    <p>Bütün veri birincil ve kamuya açık kaynaklardan alınır; başka bir harita
+    servisinin verisi kopyalanmaz.</p>
+    <table>
+      <tr><td>Uçaklar</td><td style="color:#7b9199">adsb.lol / adsb.fi · gönüllü ADS-B ağı</td></tr>
+      <tr><td>Gemiler</td><td style="color:#7b9199">meri.digitraffic.fi · Finlandiya açık AIS</td></tr>
+      <tr><td>Uydular</td><td style="color:#7b9199">SatNOGS TLE + SGP4 yörünge hesabı</td></tr>
+      <tr><td>Depremler</td><td style="color:#7b9199">USGS</td></tr>
+      <tr><td>Yangınlar / olaylar</td><td style="color:#7b9199">NASA EONET</td></tr>
+      <tr><td>Havalimanları</td><td style="color:#7b9199">OurAirports (kamu malı)</td></tr>
+      <tr><td>Kablolar</td><td style="color:#7b9199">submarinecablemap.com</td></tr>
+      <tr><td>Kameralar</td><td style="color:#7b9199">Transport for London JamCams</td></tr>
+      <tr><td>Harita zemini</td><td style="color:#7b9199">CARTO Dark Matter + OpenStreetMap (ODbL)</td></tr>
+    </table>
+    <p style="margin-top:16px">Kamera görüntüleri resmî trafik kameralarıdır: yüz veya plaka
+    tanıma yapılmaz, arşiv tutulmaz, yalnız son kare gösterilir.</p>`],
+
+  hakkinda: () => ['HAKKINDA', `
+    <p><b>ÜSTAD GÖZCÜ</b>, dünyayı tek haritada canlı izlemek için kurulmuş bağımsız bir
+    gözlem panelidir. Uçak, gemi, uydu, deprem, yangın, havalimanı, denizaltı kablosu
+    ve resmî trafik kamerası verisini aynı ekranda birleştirir.</p>
+    <p>Hiçbir veri satılmaz, ziyaretçi takibi yapılmaz, kamera görüntüsünden arşiv
+    oluşturulmaz. Amaç ticari bir ürün değil, çalışan bir gözlem aracıdır.</p>
+    <p><b>Şiar:</b> Gözcü hiç kırpmaz.</p>`],
+
+  kilavuz: () => ['NASIL KULLANILIR', `
+    <p>Haritayı açtıktan sonra:</p>
+    <table>
+      <tr><td>Katman aç/kapa</td><td style="color:#7b9199">sağ kenardaki ikon rayı veya K tuşu</td></tr>
+      <tr><td>Tema değiştir</td><td style="color:#7b9199">T tuşu · 6 tema var</td></tr>
+      <tr><td>Türkiye'ye dön</td><td style="color:#7b9199">Boşluk tuşu</td></tr>
+      <tr><td>Yer ara</td><td style="color:#7b9199">sol üstteki arama kutusu: şehir, ülke, havalimanı</td></tr>
+      <tr><td>Bilgi al</td><td style="color:#7b9199">uçağa, gemiye, uyduya, kameraya tıkla</td></tr>
+      <tr><td>Kamera izle</td><td style="color:#7b9199">kamera ikonuna tıkla · görüntü 15 sn'de tazelenir</td></tr>
+      <tr><td>Konum bağlantısı</td><td style="color:#7b9199">index.html?la=41.05&amp;lo=28.95&amp;z=8</td></tr>
+      <tr><td>Katman seçerek aç</td><td style="color:#7b9199">index.html?kat=kamera,ucak</td></tr>
+    </table>`],
+};
+const KAYNAK_ADI = {
+  ucak:'adsb.lol / adsb.fi', gemi:'digitraffic.fi (AIS)', uydu:'SatNOGS + SGP4',
+  deprem:'USGS', yangin:'NASA EONET', hava:'OurAirports', kablo:'submarinecablemap',
+  kamera:'Transport for London',
+};
+
+function pencereAc(ad){
+  const [b, g] = PENCERE[ad]();
+  $('#kutu-baslik').textContent = b;
+  $('#kutu-govde').innerHTML = g;
+  $('#perde').classList.add('acik');
+}
+document.querySelectorAll('[data-pencere]').forEach(e => {
+  e.onclick = ev => { ev.preventDefault(); pencereAc(e.dataset.pencere); };
+});
+$('#kapat').onclick = () => $('#perde').classList.remove('acik');
+$('#perde').onclick = e => { if(e.target.id === 'perde') $('#perde').classList.remove('acik'); };
+</script>
+</body>
+</html>

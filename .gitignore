@@ -1,0 +1,27 @@
+# --- Sırlar (depoda ASLA olmaz) ---
+ayar.json
+
+# --- Kişisel görseller (Kenan'ın madalyonu/fotoğrafı) ---
+harita/foto/
+
+# --- Geliştirme sırasında alınan yerel görseller (madalyon görünür) ---
+referans/
+
+# --- Çalışma zamanı verisi (sunucu kendi üretir) ---
+veri/arsiv.db
+veri/onbellek/
+veri/merkez.json
+veri/merkez-gunluk.txt
+veri/kumanda.json
+veri/uyarilar.json
+veri/bildirim-kuyrugu.jsonl
+
+# --- Gömülü üçüncü taraf kütüphane (pip ile kurulur) ---
+harita/kutuphane/
+
+# --- Python önbellekleri ---
+__pycache__/
+*.pyc
+
+# --- Üretilen raporlar ---
+raporlar/*.docx
